@@ -109,10 +109,17 @@ export default function Home() {
   const [state, setState] = useState<LayoutState>(() => loadJson(LAYOUT_KEY, defaultLayout))
   useEffect(() => saveJson(LAYOUT_KEY, state), [state])
   const [now, setNow] = useState(() => new Date())
+  const [isEditing, setIsEditing] = useState(false)
   const dragStateRef = useRef<DragState | null>(null)
   const [draggingId, setDraggingId] = useState<AppIcon['id'] | null>(null)
   const gridRef = useRef<HTMLDivElement | null>(null)
   const lastHoverPositionRef = useRef<number | null>(null)
+  const longPressTimerRef = useRef<number | null>(null)
+  const pressStartRef = useRef<{ x: number; y: number } | null>(null)
+  const suppressClickRef = useRef(false)
+  const activePointerIdRef = useRef<number | null>(null)
+  const LONG_PRESS_MS = 400
+  const MOVE_TOLERANCE = 10
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000)
@@ -127,7 +134,11 @@ export default function Home() {
   const touchStartX = useRef<number | null>(null)
 
   function open(icon: AppIcon) {
-    if (dragStateRef.current) return
+    if (dragStateRef.current || isEditing) return
+    if (suppressClickRef.current) {
+      suppressClickRef.current = false
+      return
+    }
     trackEvent('icon_click', { icon_id: icon.id, icon_label: icon.label, page: state.page })
     trackEvent('app_open', { app_id: icon.id, app_name: icon.label, source: 'home', home_page: state.page })
     nav(icon.route)
@@ -141,6 +152,7 @@ export default function Home() {
     touchStartX.current = e.touches[0]?.clientX ?? null
   }
   function onTouchEnd(e: React.TouchEvent) {
+    if (isEditing) return
     const start = touchStartX.current
     const end = e.changedTouches[0]?.clientX ?? null
     touchStartX.current = null
@@ -149,12 +161,6 @@ export default function Home() {
     if (Math.abs(dx) < 50) return
     if (dx < 0) setPage(state.page === 1 ? 2 : 2)
     if (dx > 0) setPage(state.page === 2 ? 1 : 1)
-  }
-
-  function onDragStart(icon: AppIcon, e: React.DragEvent<HTMLButtonElement>) {
-    e.dataTransfer.effectAllowed = 'move'
-    dragStateRef.current = { draggingId: icon.id, originIcons: state.icons, didDrop: false, hoverIcons: null }
-    setDraggingId(icon.id)
   }
 
   function onDragOverPosition(position: number) {
@@ -175,12 +181,11 @@ export default function Home() {
     setState(s => ({ ...s, icons: nextIcons }))
   }
 
-  function onGridDragOver(e: React.DragEvent<HTMLDivElement>) {
-    e.preventDefault()
+  function onGridPointerMove(clientX: number, clientY: number) {
     if (!gridRef.current) return
     const rect = gridRef.current.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
+    const x = clientX - rect.left
+    const y = clientY - rect.top
     if (x < 0 || y < 0 || x > rect.width || y > rect.height) return
     const col = Math.min(GRID_COLUMNS - 1, Math.max(0, Math.floor(x / (rect.width / GRID_COLUMNS))))
     const row = Math.min(GRID_ROWS - 1, Math.max(0, Math.floor(y / (rect.height / GRID_ROWS))))
@@ -190,26 +195,72 @@ export default function Home() {
     onDragOverPosition(position)
   }
 
-  function onDrop() {
+  function finishDrag(didDrop: boolean) {
     const dragState = dragStateRef.current
     if (!dragState) return
-    if (dragState.hoverIcons) {
+    if (didDrop && dragState.hoverIcons) {
       setState(s => ({ ...s, icons: dragState.hoverIcons ?? s.icons }))
-    }
-    dragState.didDrop = true
-    dragStateRef.current = null
-    setDraggingId(null)
-    lastHoverPositionRef.current = null
-  }
-
-  function onDragEnd() {
-    const dragState = dragStateRef.current
-    if (dragState && !dragState.didDrop) {
+    } else if (!didDrop) {
       setState(s => ({ ...s, icons: dragState.originIcons }))
     }
     dragStateRef.current = null
     setDraggingId(null)
     lastHoverPositionRef.current = null
+    activePointerIdRef.current = null
+  }
+
+  function clearLongPressTimer() {
+    if (longPressTimerRef.current) {
+      window.clearTimeout(longPressTimerRef.current)
+      longPressTimerRef.current = null
+    }
+  }
+
+  function onIconPointerDown(icon: AppIcon, e: React.PointerEvent<HTMLButtonElement>) {
+    if (e.button !== 0) return
+    clearLongPressTimer()
+    if (isEditing) {
+      activePointerIdRef.current = e.pointerId
+      e.currentTarget.setPointerCapture(e.pointerId)
+      dragStateRef.current = {
+        draggingId: icon.id,
+        originIcons: state.icons,
+        didDrop: false,
+        hoverIcons: null,
+      }
+      setDraggingId(icon.id)
+      onGridPointerMove(e.clientX, e.clientY)
+      return
+    }
+    pressStartRef.current = { x: e.clientX, y: e.clientY }
+    longPressTimerRef.current = window.setTimeout(() => {
+      setIsEditing(true)
+      suppressClickRef.current = true
+      longPressTimerRef.current = null
+    }, LONG_PRESS_MS)
+  }
+
+  function onIconPointerMove(e: React.PointerEvent<HTMLButtonElement>) {
+    if (activePointerIdRef.current === e.pointerId && dragStateRef.current) {
+      onGridPointerMove(e.clientX, e.clientY)
+      return
+    }
+    if (!pressStartRef.current || !longPressTimerRef.current) return
+    const dx = e.clientX - pressStartRef.current.x
+    const dy = e.clientY - pressStartRef.current.y
+    if (Math.hypot(dx, dy) > MOVE_TOLERANCE) {
+      clearLongPressTimer()
+    }
+  }
+
+  function onIconPointerUp(e: React.PointerEvent<HTMLButtonElement>) {
+    if (activePointerIdRef.current === e.pointerId && dragStateRef.current) {
+      e.currentTarget.releasePointerCapture(e.pointerId)
+      finishDrag(true)
+      return
+    }
+    clearLongPressTimer()
+    pressStartRef.current = null
   }
 
   const hour = now.getHours() % 12
@@ -218,8 +269,8 @@ export default function Home() {
   const minuteDeg = minute * 6
 
   return (
-    <div className="launcher" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-      <div className="grid" ref={gridRef} onDragOver={onGridDragOver} onDrop={onDrop}>
+    <div className={`launcher ${isEditing ? 'editing' : ''}`} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      <div className="grid" ref={gridRef}>
         {pageIcons.map(icon => {
           const size = getSize(icon)
           const cells = getCellsForPosition(icon.position, size)
@@ -232,9 +283,11 @@ export default function Home() {
               key={icon.id}
               className={`icon ${isClockWidget ? 'widget clock-widget' : ''} ${draggingId === icon.id ? 'dragging' : ''}`}
               onClick={() => open(icon)}
-              draggable
-              onDragStart={event => onDragStart(icon, event)}
-              onDragEnd={onDragEnd}
+              draggable={false}
+              onPointerDown={event => onIconPointerDown(icon, event)}
+              onPointerMove={onIconPointerMove}
+              onPointerUp={onIconPointerUp}
+              onPointerCancel={onIconPointerUp}
               style={{
                 gridColumn: `${col + 1} / span ${size.cols}`,
                 gridRow: `${row + 1} / span ${size.rows}`,
