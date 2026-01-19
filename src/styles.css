@@ -1,18 +1,19 @@
 :root {
-  --bg: #1b1b1b;
-  --panel: #2a2a2a;
-  --panel2: #333;
-  --text: #e7e7e7;
-  --muted: #b7b7b7;
-  --line: #444;
+  --bg: #0a2c4a;
+  --panel: rgba(0, 0, 0, 0.45);
+  --panel2: rgba(0, 0, 0, 0.6);
+  --text: #f4f7fb;
+  --muted: #d7e1ef;
+  --line: rgba(255, 255, 255, 0.18);
+  --gloss: rgba(255, 255, 255, 0.35);
 }
 
 * { box-sizing: border-box; }
 html, body { height: 100%; }
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-  background: #0f0f0f;
+  font-family: "Droid Sans", "Roboto", "Segoe UI", system-ui, sans-serif;
+  background: #071726;
   color: var(--text);
 }
 
@@ -26,17 +27,17 @@ body {
 .phone {
   width: min(420px, 92vw);
   height: min(860px, 86vh);
-  background: #000;
-  border: 2px solid #222;
-  border-radius: 18px;
+  background: #030507;
+  border: 2px solid #1a1a1a;
+  border-radius: 24px;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  box-shadow: 0 26px 60px rgba(0, 0, 0, 0.7);
 }
 
 .statusbar {
   height: 28px;
-  background: #111;
-  border-bottom: 1px solid #222;
+  background: #090909;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -49,15 +50,83 @@ body {
 
 .screen {
   height: calc(100% - 28px);
-  background: linear-gradient(180deg, #1a1a1a, #101010);
+  position: relative;
+  background:
+    radial-gradient(circle at 30% 15%, rgba(255, 255, 255, 0.22), transparent 45%),
+    linear-gradient(180deg, #2cb0f1 0%, #3aa8db 35%, #1d4e7c 70%, #0d2c4a 100%);
+  overflow: hidden;
+}
+.screen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 70%, rgba(255, 255, 255, 0.16), transparent 55%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1), transparent 45%, rgba(0, 0, 0, 0.4) 100%);
+  pointer-events: none;
 }
 
 .launcher {
   height: 100%;
   display: flex;
   flex-direction: column;
-  padding: 14px 14px 18px;
-  gap: 10px;
+  padding: 18px 16px 20px;
+  gap: 14px;
+  position: relative;
+  z-index: 1;
+}
+
+.hero {
+  display: flex;
+  justify-content: center;
+  padding-top: 6px;
+}
+
+.hero-clock {
+  width: min(170px, 50vw);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 40%, #ffffff, #d2d7df 55%, #9aa5b5 100%);
+  border: 6px solid #5b6472;
+  box-shadow:
+    inset 0 4px 12px rgba(255, 255, 255, 0.6),
+    inset 0 -6px 12px rgba(0, 0, 0, 0.35),
+    0 10px 20px rgba(0, 0, 0, 0.35);
+  position: relative;
+}
+.hero-clock .tick {
+  position: absolute;
+  inset: 14%;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+}
+.hero-clock .hand {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform-origin: 0% 50%;
+  background: #1c1c1c;
+  border-radius: 999px;
+}
+.hero-clock .hand.hour {
+  width: 34%;
+  height: 4px;
+}
+.hero-clock .hand.min {
+  width: 44%;
+  height: 3px;
+}
+.hero-clock .center {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #1c1c1c;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 2px #f4f7fb;
 }
 
 .grid {
@@ -76,39 +145,52 @@ body {
 .icon {
   width: 100%;
   height: 100%;
-  background: transparent;
-  border: 1px solid rgba(255,255,255,.06);
-  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.05)),
+    rgba(10, 10, 10, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 12px;
   color: var(--text);
   display: grid;
   grid-template-rows: 1fr auto;
   align-items: center;
   justify-items: center;
-  padding: 8px;
+  padding: 8px 6px;
+  box-shadow:
+    inset 0 1px 0 var(--gloss),
+    0 4px 10px rgba(0, 0, 0, 0.25);
 }
 
-.glyph { font-size: 30px; }
-.label { font-size: 12px; color: var(--muted); }
+.glyph { font-size: 28px; filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.35)); }
+.label {
+  font-size: 12px;
+  color: #f0f6ff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
 
 .dots {
   display: flex;
   justify-content: center;
   gap: 8px;
-  padding-bottom: 6px;
+  padding: 8px 12px 6px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.65));
+  border-radius: 16px;
+  align-self: center;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 .dot {
   width: 10px; height: 10px;
   border-radius: 999px;
-  border: 1px solid #666;
-  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.12);
 }
 .dot.active { background: #bbb; }
 
 .app { height: 100%; display: flex; flex-direction: column; }
 .appbar {
   height: 44px;
-  background: #151515;
-  border-bottom: 1px solid #222;
+  background: var(--panel2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -131,13 +213,13 @@ body {
 .timer-display { font-size: 28px; text-align: center; }
 .timer-row { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 10px; }
 .btn {
-  background: #2a2a2a;
+  background: rgba(0, 0, 0, 0.4);
   color: var(--text);
-  border: 1px solid #3b3b3b;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 10px;
   padding: 10px 12px;
 }
-.btn.primary { background: #3a3a3a; }
+.btn.primary { background: rgba(0, 0, 0, 0.6); }
 .btn.ghost { background: transparent; }
 
 .list { padding: 8px; }
@@ -147,7 +229,7 @@ body {
   justify-content: space-between;
   gap: 12px;
   padding: 14px 12px;
-  border-bottom: 1px solid #222;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
   color: var(--text);
   text-decoration: none;
 }
