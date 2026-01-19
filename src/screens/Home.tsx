@@ -118,6 +118,8 @@ export default function Home() {
   const pressStartRef = useRef<{ x: number; y: number } | null>(null)
   const suppressClickRef = useRef(false)
   const activePointerIdRef = useRef<number | null>(null)
+  const dragStartRef = useRef<{ x: number; y: number } | null>(null)
+  const hasDraggedRef = useRef(false)
   const LONG_PRESS_MS = 400
   const MOVE_TOLERANCE = 10
 
@@ -207,6 +209,17 @@ export default function Home() {
     setDraggingId(null)
     lastHoverPositionRef.current = null
     activePointerIdRef.current = null
+    dragStartRef.current = null
+    hasDraggedRef.current = false
+  }
+
+  function resetDragState() {
+    dragStateRef.current = null
+    setDraggingId(null)
+    lastHoverPositionRef.current = null
+    activePointerIdRef.current = null
+    dragStartRef.current = null
+    hasDraggedRef.current = false
   }
 
   function clearLongPressTimer() {
@@ -228,8 +241,8 @@ export default function Home() {
         didDrop: false,
         hoverIcons: null,
       }
-      setDraggingId(icon.id)
-      onGridPointerMove(e.clientX, e.clientY)
+      dragStartRef.current = { x: e.clientX, y: e.clientY }
+      hasDraggedRef.current = false
       return
     }
     pressStartRef.current = { x: e.clientX, y: e.clientY }
@@ -242,6 +255,15 @@ export default function Home() {
 
   function onIconPointerMove(e: React.PointerEvent<HTMLButtonElement>) {
     if (activePointerIdRef.current === e.pointerId && dragStateRef.current) {
+      const start = dragStartRef.current
+      if (!start) return
+      const dx = e.clientX - start.x
+      const dy = e.clientY - start.y
+      if (!hasDraggedRef.current) {
+        if (Math.hypot(dx, dy) < MOVE_TOLERANCE) return
+        hasDraggedRef.current = true
+        setDraggingId(dragStateRef.current.draggingId)
+      }
       onGridPointerMove(e.clientX, e.clientY)
       return
     }
@@ -256,7 +278,11 @@ export default function Home() {
   function onIconPointerUp(e: React.PointerEvent<HTMLButtonElement>) {
     if (activePointerIdRef.current === e.pointerId && dragStateRef.current) {
       e.currentTarget.releasePointerCapture(e.pointerId)
-      finishDrag(true)
+      if (hasDraggedRef.current) {
+        finishDrag(true)
+      } else {
+        resetDragState()
+      }
       return
     }
     clearLongPressTimer()
