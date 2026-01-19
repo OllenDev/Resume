@@ -12,6 +12,7 @@ export type AppIcon = {
   route: string
   page: 1 | 2
   position: number // 0..15 for a 4x4
+  size?: { cols: number; rows: number }
 }
 
 export const defaultIcons: AppIcon[] = [
