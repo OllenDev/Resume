@@ -12,6 +12,12 @@ export default function Home() {
   const nav = useNavigate()
   const [state, setState] = useState<LayoutState>(() => loadJson(LAYOUT_KEY, defaultLayout))
   useEffect(() => saveJson(LAYOUT_KEY, state), [state])
+  const [now, setNow] = useState(() => new Date())
+
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 1000)
+    return () => clearInterval(t)
+  }, [])
 
   const pageIcons = useMemo(
     () => state.icons.filter(i => i.page === state.page),
@@ -44,8 +50,21 @@ export default function Home() {
     if (dx > 0) setPage(state.page === 2 ? 1 : 1)
   }
 
+  const hour = now.getHours() % 12
+  const minute = now.getMinutes()
+  const hourDeg = hour * 30 + minute / 2
+  const minuteDeg = minute * 6
+
   return (
     <div className="launcher" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      <div className="hero">
+        <div className="hero-clock" aria-hidden="true">
+          <div className="tick" />
+          <div className="hand hour" style={{ transform: `rotate(${hourDeg}deg)` }} />
+          <div className="hand min" style={{ transform: `rotate(${minuteDeg}deg)` }} />
+          <div className="center" />
+        </div>
+      </div>
       <div className="grid">
         {Array.from({ length: 16 }).map((_, idx) => {
           const icon = pageIcons.find(i => i.position === idx)
