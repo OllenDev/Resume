@@ -23,6 +23,7 @@ export default function Home() {
   const [isEditing, setIsEditing] = useState(false)
   const dragStateRef = useRef<DragState | null>(null)
   const [draggingId, setDraggingId] = useState<AppIcon['id'] | null>(null)
+  const [jiggleId, setJiggleId] = useState<AppIcon['id'] | null>(null)
   const gridRef = useRef<HTMLDivElement | null>(null)
   const lastHoverPositionRef = useRef<number | null>(null)
   const longPressTimerRef = useRef<number | null>(null)
@@ -118,6 +119,7 @@ export default function Home() {
     }
     dragStateRef.current = null
     setDraggingId(null)
+    setJiggleId(null)
     lastHoverPositionRef.current = null
     activePointerIdRef.current = null
     dragStartRef.current = null
@@ -127,6 +129,7 @@ export default function Home() {
   function resetDragState() {
     dragStateRef.current = null
     setDraggingId(null)
+    setJiggleId(null)
     lastHoverPositionRef.current = null
     activePointerIdRef.current = null
     dragStartRef.current = null
@@ -159,6 +162,7 @@ export default function Home() {
     pressStartRef.current = { x: e.clientX, y: e.clientY }
     longPressTimerRef.current = window.setTimeout(() => {
       setIsEditing(true)
+      setJiggleId(icon.id)
       suppressClickRef.current = true
       longPressTimerRef.current = null
     }, LONG_PRESS_MS)
@@ -174,6 +178,7 @@ export default function Home() {
         if (Math.hypot(dx, dy) < MOVE_TOLERANCE) return
         hasDraggedRef.current = true
         setDraggingId(dragStateRef.current.draggingId)
+        setJiggleId(null)
       }
       onGridPointerMove(e.clientX, e.clientY)
       return
@@ -197,6 +202,7 @@ export default function Home() {
       return
     }
     clearLongPressTimer()
+    setJiggleId(null)
     pressStartRef.current = null
   }
 
@@ -218,7 +224,7 @@ export default function Home() {
           return (
             <button
               key={icon.id}
-              className={`icon ${isClockWidget ? 'widget clock-widget' : ''} ${draggingId === icon.id ? 'dragging' : ''}`}
+              className={`icon ${isClockWidget ? 'widget clock-widget' : ''} ${draggingId === icon.id ? 'dragging' : ''} ${jiggleId === icon.id ? 'jiggling' : ''}`}
               onClick={() => open(icon)}
               draggable={false}
               onPointerDown={event => onIconPointerDown(icon, event)}

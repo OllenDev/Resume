@@ -106,14 +106,10 @@ body {
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.launcher.editing .icon {
-  animation: jiggle 0.18s ease-in-out infinite;
-  animation-delay: calc(var(--jiggle-delay, 0s));
+.icon.jiggling {
+  animation: jiggle 0.6s ease-in-out infinite;
   transform-origin: 50% 70%;
 }
-
-.launcher.editing .icon:nth-child(2n) { --jiggle-delay: 0.03s; }
-.launcher.editing .icon:nth-child(3n) { --jiggle-delay: 0.06s; }
 
 .icon:active {
   transform: scale(0.98);
