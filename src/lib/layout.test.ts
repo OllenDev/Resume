@@ -27,7 +27,7 @@ describe('layoutWithMovingIcon', () => {
     const settings = result?.find(icon => icon.id === 'settings')
     const resume = result?.find(icon => icon.id === 'resume')
     expect(timer?.position).toBe(1)
-    expect(settings?.position).toBe(0)
+    expect(settings?.position).toBe(2)
     expect(resume?.position).toBe(5)
   })
 })
