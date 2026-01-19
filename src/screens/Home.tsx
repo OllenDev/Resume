@@ -15,6 +15,7 @@ type DragState = {
   draggingId: AppIcon['id']
   originIcons: AppIcon[]
   didDrop: boolean
+  hoverIcons: AppIcon[] | null
 }
 
 const defaultSize = { cols: 1, rows: 1 }
@@ -23,10 +24,6 @@ function getSize(icon: AppIcon) {
   return icon.size ?? defaultSize
 }
 
-function isSingleCell(icon: AppIcon) {
-  const size = getSize(icon)
-  return size.cols === 1 && size.rows === 1
-}
 
 function getCellsForPosition(position: number, size: { cols: number; rows: number }) {
   const row = Math.floor(position / GRID_COLUMNS)
@@ -55,84 +52,56 @@ function getOccupiedCells(icons: AppIcon[], page: 1 | 2, excludeId?: AppIcon['id
   return occupied
 }
 
-function canPlaceIcon(
-  icon: AppIcon,
-  position: number,
-  icons: AppIcon[],
-  page: 1 | 2,
-  excludeId?: AppIcon['id']
+function findNextAvailablePosition(
+  size: { cols: number; rows: number },
+  occupied: Set<number>
 ) {
-  const size = getSize(icon)
-  const cells = getCellsForPosition(position, size)
-  if (cells.length === 0) return false
-  const occupied = getOccupiedCells(icons, page, excludeId)
-  return cells.every(cell => !occupied.has(cell))
+  for (let pos = 0; pos < CELL_COUNT; pos += 1) {
+    const cells = getCellsForPosition(pos, size)
+    if (cells.length === 0) continue
+    if (cells.every(cell => !occupied.has(cell))) {
+      return pos
+    }
+  }
+  return null
 }
 
-function moveIconToPosition(
+function layoutWithMovingIcon(
   icons: AppIcon[],
-  draggingId: AppIcon['id'],
-  position: number,
-  page: 1 | 2
-) {
-  const dragging = icons.find(icon => icon.id === draggingId)
-  if (!dragging) return icons
-  const updated = icons.map(icon =>
-    icon.id === draggingId ? { ...icon, position, page } : icon
-  )
-  return updated
-}
-
-function shiftIconsForDrop(
-  icons: AppIcon[],
-  draggingId: AppIcon['id'],
+  movingId: AppIcon['id'],
   targetPosition: number,
   page: 1 | 2
 ) {
-  const dragging = icons.find(icon => icon.id === draggingId)
-  if (!dragging || !isSingleCell(dragging)) return null
+  const movingIcon = icons.find(icon => icon.id === movingId)
+  if (!movingIcon) return null
+  const movingSize = getSize(movingIcon)
+  const movingCells = getCellsForPosition(targetPosition, movingSize)
+  if (movingCells.length === 0) return null
 
-  const occupied = getOccupiedCells(icons, page, draggingId)
-  const targetIcon = occupied.get(targetPosition)
-  if (!targetIcon || !isSingleCell(targetIcon)) return null
+  const occupied = new Set<number>()
+  movingCells.forEach(cell => occupied.add(cell))
 
-  const emptyPositions = Array.from({ length: CELL_COUNT }, (_, idx) => idx).filter(
-    pos => !occupied.has(pos)
+  const updated = icons.map(icon =>
+    icon.id === movingId ? { ...icon, position: targetPosition, page } : { ...icon }
   )
-  if (emptyPositions.length === 0) return null
 
-  const forwardEmpty = emptyPositions.find(pos => pos > targetPosition)
-  const backwardEmpty = [...emptyPositions].reverse().find(pos => pos < targetPosition)
-  const emptyPosition = forwardEmpty ?? backwardEmpty
-  if (emptyPosition == null) return null
+  const candidates = icons
+    .filter(icon => icon.id !== movingId && icon.page === page)
+    .sort((a, b) => a.position - b.position)
 
-  const rangeStart = Math.min(targetPosition, emptyPosition)
-  const rangeEnd = Math.max(targetPosition, emptyPosition)
-  for (let pos = rangeStart; pos <= rangeEnd; pos += 1) {
-    const icon = occupied.get(pos)
-    if (icon && !isSingleCell(icon)) return null
+  for (const icon of candidates) {
+    const size = getSize(icon)
+    const nextPosition = findNextAvailablePosition(size, occupied)
+    if (nextPosition == null) {
+      return null
+    }
+    const nextCells = getCellsForPosition(nextPosition, size)
+    nextCells.forEach(cell => occupied.add(cell))
+    const target = updated.find(item => item.id === icon.id)
+    if (target) target.position = nextPosition
   }
 
-  const shifted = icons.map(icon => ({ ...icon }))
-  if (emptyPosition > targetPosition) {
-    for (let pos = emptyPosition - 1; pos >= targetPosition; pos -= 1) {
-      const icon = occupied.get(pos)
-      if (!icon) continue
-      const target = shifted.find(item => item.id === icon.id)
-      if (target) target.position = pos + 1
-    }
-  } else {
-    for (let pos = emptyPosition + 1; pos <= targetPosition; pos += 1) {
-      const icon = occupied.get(pos)
-      if (!icon) continue
-      const target = shifted.find(item => item.id === icon.id)
-      if (target) target.position = pos - 1
-    }
-  }
-
-  const draggingTarget = shifted.find(item => item.id === draggingId)
-  if (draggingTarget) draggingTarget.position = targetPosition
-  return shifted
+  return updated
 }
 
 export default function Home() {
@@ -184,28 +153,26 @@ export default function Home() {
 
   function onDragStart(icon: AppIcon, e: React.DragEvent<HTMLButtonElement>) {
     e.dataTransfer.effectAllowed = 'move'
-    dragStateRef.current = { draggingId: icon.id, originIcons: state.icons, didDrop: false }
+    dragStateRef.current = { draggingId: icon.id, originIcons: state.icons, didDrop: false, hoverIcons: null }
     setDraggingId(icon.id)
   }
 
   function onDragOverPosition(position: number) {
     const dragState = dragStateRef.current
     if (!dragState) return
-    const dragging = state.icons.find(item => item.id === dragState.draggingId)
+    const dragging = dragState.originIcons.find(item => item.id === dragState.draggingId)
     if (!dragging) return
     if (dragging.page !== state.page) return
 
-    const isAvailable = canPlaceIcon(dragging, position, state.icons, state.page, dragState.draggingId)
-    if (isAvailable) {
-      const moved = moveIconToPosition(state.icons, dragState.draggingId, position, state.page)
-      setState(s => ({ ...s, icons: moved }))
-      return
-    }
-
-    const shifted = shiftIconsForDrop(state.icons, dragState.draggingId, position, state.page)
-    if (shifted) {
-      setState(s => ({ ...s, icons: shifted }))
-    }
+    const nextIcons = layoutWithMovingIcon(
+      dragState.originIcons,
+      dragState.draggingId,
+      position,
+      state.page
+    )
+    if (!nextIcons) return
+    dragState.hoverIcons = nextIcons
+    setState(s => ({ ...s, icons: nextIcons }))
   }
 
   function onGridDragOver(e: React.DragEvent<HTMLDivElement>) {
@@ -226,6 +193,9 @@ export default function Home() {
   function onDrop() {
     const dragState = dragStateRef.current
     if (!dragState) return
+    if (dragState.hoverIcons) {
+      setState(s => ({ ...s, icons: dragState.hoverIcons ?? s.icons }))
+    }
     dragState.didDrop = true
     dragStateRef.current = null
     setDraggingId(null)
@@ -249,14 +219,6 @@ export default function Home() {
 
   return (
     <div className="launcher" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-      <div className="hero">
-        <div className="hero-clock" aria-hidden="true">
-          <div className="tick" />
-          <div className="hand hour" style={{ transform: `rotate(${hourDeg}deg)` }} />
-          <div className="hand min" style={{ transform: `rotate(${minuteDeg}deg)` }} />
-          <div className="center" />
-        </div>
-      </div>
       <div className="grid" ref={gridRef} onDragOver={onGridDragOver} onDrop={onDrop}>
         {pageIcons.map(icon => {
           const size = getSize(icon)
@@ -264,10 +226,11 @@ export default function Home() {
           if (cells.length === 0) return null
           const row = Math.floor(icon.position / GRID_COLUMNS)
           const col = icon.position % GRID_COLUMNS
+          const isClockWidget = icon.id === 'clock-widget'
           return (
             <button
               key={icon.id}
-              className={`icon ${draggingId === icon.id ? 'dragging' : ''}`}
+              className={`icon ${isClockWidget ? 'widget clock-widget' : ''} ${draggingId === icon.id ? 'dragging' : ''}`}
               onClick={() => open(icon)}
               draggable
               onDragStart={event => onDragStart(icon, event)}
@@ -277,8 +240,19 @@ export default function Home() {
                 gridRow: `${row + 1} / span ${size.rows}`,
               }}
             >
-              <div className="glyph">{icon.icon}</div>
-              <div className="label">{icon.label}</div>
+              {isClockWidget ? (
+                <div className="widget-clock">
+                  <div className="tick" />
+                  <div className="hand hour" style={{ transform: `rotate(${hourDeg}deg)` }} />
+                  <div className="hand min" style={{ transform: `rotate(${minuteDeg}deg)` }} />
+                  <div className="center" />
+                </div>
+              ) : (
+                <>
+                  <div className="glyph">{icon.icon}</div>
+                  <div className="label">{icon.label}</div>
+                </>
+              )}
             </button>
           )
         })}
