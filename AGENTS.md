@@ -6,6 +6,8 @@
 - GitHub Pages will 404 on `/src/main.tsx` if you publish the repo root, and browsers cannot run `.tsx` sources anyway.
 - Easiest path: set Pages to use the `/docs` folder on the default branch, then run `npm run build:pages` to refresh `docs/`.
 - `import.meta.env` values (like `VITE_GA_ID`) are injected at build time; they will be undefined when serving raw source files.
+- For branch-based Pages, GitHub Pages serves whatever is committed in `/docs`. Run `npm run build:pages` before committing so the built `docs/` output (including `.nojekyll`) is checked in and served by Pages.
+- For agent notes: put technical requirements here first; only update `README.md` when explicitly requested.
 
 ## Vite static deployment summary (from docs)
 
