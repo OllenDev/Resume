@@ -7,7 +7,7 @@
 
     <!-- GA4 (optional): set VITE_GA_ID in env to enable -->
     <script type="module">
-      const gaId = import.meta.env.VITE_GA_ID;
+      const gaId = import.meta.env?.VITE_GA_ID;
       if (gaId) {
         const s = document.createElement('script');
         s.async = true;
