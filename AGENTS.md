@@ -24,6 +24,16 @@
 - If you publish from a branch, GitHub Pages runs Jekyll by default; for non-Jekyll builds, add a `.nojekyll` file at the publishing root or use an Actions workflow to build and deploy.
 - Pages does not support server-side languages; only static assets are served.
 
+## Troubleshooting
+
+### npm warning about `http-proxy`
+
+If you see a warning like `Unknown env config "http-proxy"` when running npm commands, it means your
+shell environment is exporting `http-proxy`/`https-proxy` (with a hyphen). npm expects `HTTP_PROXY`,
+`HTTPS_PROXY`, or the `NPM_CONFIG_HTTP_PROXY`/`NPM_CONFIG_HTTPS_PROXY` variables instead. Update
+your shell environment to use the supported variable names or unset the `http-proxy`/`https-proxy`
+variables to silence the warning.
+
 ## Plan to align config with Vite GitHub Pages guidance
 
 1. Confirm which Pages URL we deploy to (user/org root vs repo subpath).
