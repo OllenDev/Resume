@@ -15,18 +15,22 @@ body {
   font-family: "Droid Sans", "Roboto", "Segoe UI", system-ui, sans-serif;
   background: #071726;
   color: var(--text);
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
 }
 
 .page {
-  min-height: 100%;
-  display: grid;
-  place-items: center;
-  padding: 16px;
+  min-height: 100dvh;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  padding: 0;
 }
 
 .phone {
-  width: min(420px, 92vw);
-  height: min(860px, 86vh);
+  width: min(420px, 100vw);
+  height: 100dvh;
   background: #030507;
   border: 2px solid #1a1a1a;
   border-radius: 24px;
@@ -83,6 +87,7 @@ body {
   grid-template-rows: repeat(4, 1fr);
   gap: 10px;
   position: relative;
+  touch-action: none;
 }
 
 .icon {
@@ -94,19 +99,35 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 12px;
   color: var(--text);
-  display: grid;
-  grid-template-rows: 1fr auto;
-  align-items: center;
-  justify-items: center;
   padding: 8px 6px;
   box-shadow:
     inset 0 1px 0 var(--gloss),
     0 4px 10px rgba(0, 0, 0, 0.25);
   cursor: grab;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: none;
 }
 
-.icon.jiggling {
+.icon-inner {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  align-items: center;
+  justify-items: center;
+}
+
+.icon.widget .icon-inner {
+  grid-template-rows: 1fr;
+  align-items: stretch;
+  justify-items: stretch;
+}
+
+.icon.jiggling .icon-inner,
+.icon.dragging .icon-inner {
   animation: jiggle 0.6s ease-in-out infinite;
   transform-origin: 50% 70%;
 }
@@ -118,7 +139,6 @@ body {
 .icon.dragging {
   cursor: grabbing;
   opacity: 0.75;
-  animation: none;
   transform: scale(1.05) translateY(-4px);
   box-shadow:
     inset 0 1px 0 var(--gloss),
@@ -158,9 +178,10 @@ body {
   position: absolute;
   left: 50%;
   top: 50%;
-  transform-origin: 0% 50%;
+  transform-origin: left center;
   background: #1c1c1c;
   border-radius: 999px;
+  will-change: transform;
 }
 .widget-clock .hand.hour {
   width: 34%;
@@ -187,6 +208,8 @@ body {
   font-size: 12px;
   color: #f0f6ff;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .dots {
@@ -224,7 +247,7 @@ body {
   font-size: 18px;
 }
 .title { font-weight: 600; }
-.appcontent { flex: 1; overflow: auto; }
+.appcontent { flex: 1; overflow: hidden; }
 
 .center { height: 100%; display: grid; place-items: center; text-align: center; }
 .clock-time { font-size: 48px; }
@@ -278,4 +301,14 @@ body {
   height: 100%;
   border: 0;
   background: #000;
+}
+
+@media (max-width: 600px) {
+  .phone {
+    width: 100vw;
+    height: 100dvh;
+    border-radius: 0;
+    border: 0;
+    box-shadow: none;
+  }
 }

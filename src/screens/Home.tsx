@@ -5,7 +5,7 @@ import { loadJson, saveJson } from '../lib/storage'
 import { trackEvent } from '../lib/analytics'
 import { GRID_COLUMNS, GRID_ROWS, getCellsForPosition, getSize, layoutWithMovingIcon } from '../lib/layout'
 
-const LAYOUT_KEY = 'a1_layout_v1'
+const LAYOUT_KEY = 'a1_layout_v2'
 type LayoutState = { icons: AppIcon[]; page: 1 | 2 }
 const defaultLayout: LayoutState = { icons: defaultIcons, page: 1 }
 type DragState = {
@@ -178,7 +178,7 @@ export default function Home() {
         if (Math.hypot(dx, dy) < MOVE_TOLERANCE) return
         hasDraggedRef.current = true
         setDraggingId(dragStateRef.current.draggingId)
-        setJiggleId(null)
+        setJiggleId(dragStateRef.current.draggingId)
       }
       onGridPointerMove(e.clientX, e.clientY)
       return
@@ -236,19 +236,21 @@ export default function Home() {
                 gridRow: `${row + 1} / span ${size.rows}`,
               }}
             >
-              {isClockWidget ? (
-                <div className="widget-clock">
-                  <div className="tick" />
-                  <div className="hand hour" style={{ transform: `rotate(${hourDeg}deg)` }} />
-                  <div className="hand min" style={{ transform: `rotate(${minuteDeg}deg)` }} />
-                  <div className="center" />
-                </div>
-              ) : (
-                <>
-                  <div className="glyph">{icon.icon}</div>
-                  <div className="label">{icon.label}</div>
-                </>
-              )}
+              <div className="icon-inner">
+                {isClockWidget ? (
+                  <div className="widget-clock">
+                    <div className="tick" />
+                    <div className="hand hour" style={{ transform: `translateY(-50%) rotate(${hourDeg}deg)` }} />
+                    <div className="hand min" style={{ transform: `translateY(-50%) rotate(${minuteDeg}deg)` }} />
+                    <div className="center" />
+                  </div>
+                ) : (
+                  <>
+                    <div className="glyph">{icon.icon}</div>
+                    <div className="label">{icon.label}</div>
+                  </>
+                )}
+              </div>
             </button>
           )
         })}
