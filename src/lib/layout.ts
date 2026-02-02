@@ -1,7 +1,7 @@
 import { AppIcon } from '../data/apps'
 
 export const GRID_COLUMNS = 4
-export const GRID_ROWS = 4
+export const GRID_ROWS = 6
 export const CELL_COUNT = GRID_COLUMNS * GRID_ROWS
 
 export const defaultSize = { cols: 1, rows: 1 }

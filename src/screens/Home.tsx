@@ -29,6 +29,8 @@ export default function Home() {
   const dragStateRef = useRef<DragState | null>(null)
   const [draggingId, setDraggingId] = useState<AppIcon['id'] | null>(null)
   const [jiggleId, setJiggleId] = useState<AppIcon['id'] | null>(null)
+  const [dragTargetPage, setDragTargetPage] = useState<1 | 2>(defaultLayout.page)
+  const launcherRef = useRef<HTMLDivElement | null>(null)
   const gridRef = useRef<HTMLDivElement | null>(null)
   const lastHoverPositionRef = useRef<number | null>(null)
   const longPressTimerRef = useRef<number | null>(null)
@@ -39,6 +41,7 @@ export default function Home() {
   const hasDraggedRef = useRef(false)
   const LONG_PRESS_MS = 400
   const MOVE_TOLERANCE = 10
+  const HOVER_ZONE_RATIO = 0.18
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000)
@@ -97,13 +100,13 @@ export default function Home() {
     if (!dragState) return
     const dragging = dragState.originIcons.find(item => item.id === dragState.draggingId)
     if (!dragging) return
-    if (dragging.page !== state.page) return
+    const targetPage = dragTargetPage
 
     const nextIcons = layoutWithMovingIcon(
       dragState.originIcons,
       dragState.draggingId,
       position,
-      state.page
+      targetPage
     )
     if (!nextIcons) return
     dragState.hoverIcons = nextIcons
@@ -124,6 +127,25 @@ export default function Home() {
     onDragOverPosition(position)
   }
 
+  function onHoverZoneMove(clientX: number, clientY: number) {
+    if (!launcherRef.current) return
+    const rect = launcherRef.current.getBoundingClientRect()
+    const threshold = rect.width * HOVER_ZONE_RATIO
+    const withinY = clientY >= rect.top && clientY <= rect.bottom
+    if (!withinY) return
+    if (clientX <= rect.left + threshold && dragTargetPage !== 1) {
+      setDragTargetPage(1)
+      lastHoverPositionRef.current = null
+      setPage(1)
+      return
+    }
+    if (clientX >= rect.right - threshold && dragTargetPage !== 2) {
+      setDragTargetPage(2)
+      lastHoverPositionRef.current = null
+      setPage(2)
+    }
+  }
+
   function finishDrag(didDrop: boolean) {
     const dragState = dragStateRef.current
     if (!dragState) return
@@ -135,6 +157,7 @@ export default function Home() {
     dragStateRef.current = null
     setDraggingId(null)
     setJiggleId(null)
+    setDragTargetPage(state.page)
     lastHoverPositionRef.current = null
     activePointerIdRef.current = null
     dragStartRef.current = null
@@ -145,6 +168,7 @@ export default function Home() {
     dragStateRef.current = null
     setDraggingId(null)
     setJiggleId(null)
+    setDragTargetPage(state.page)
     lastHoverPositionRef.current = null
     activePointerIdRef.current = null
     dragStartRef.current = null
@@ -170,6 +194,7 @@ export default function Home() {
         didDrop: false,
         hoverIcons: null,
       }
+      setDragTargetPage(state.page)
       dragStartRef.current = { x: e.clientX, y: e.clientY }
       hasDraggedRef.current = false
       return
@@ -195,6 +220,7 @@ export default function Home() {
         setDraggingId(dragStateRef.current.draggingId)
         setJiggleId(dragStateRef.current.draggingId)
       }
+      onHoverZoneMove(e.clientX, e.clientY)
       onGridPointerMove(e.clientX, e.clientY)
       return
     }
@@ -227,7 +253,18 @@ export default function Home() {
   const minuteDeg = minute * 6
 
   return (
-    <div className={`launcher ${isEditing ? 'editing' : ''}`} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+    <div
+      className={`launcher ${isEditing ? 'editing' : ''}`}
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+      ref={launcherRef}
+    >
+      {draggingId ? (
+        <>
+          <div className={`hover-zone left ${dragTargetPage === 1 ? 'active' : ''}`} aria-hidden="true" />
+          <div className={`hover-zone right ${dragTargetPage === 2 ? 'active' : ''}`} aria-hidden="true" />
+        </>
+      ) : null}
       <div className="grid" ref={gridRef}>
         {pageIcons.map(icon => {
           const size = getSize(icon)
