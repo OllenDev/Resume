@@ -19,11 +19,10 @@ export type AppIcon = {
 export const defaultIcons: AppIcon[] = [
   { id: 'clock-widget', label: 'Clock', icon: '🕒', route: '/app/clock', page: 1, position: 0, size: { cols: 2, rows: 2 } },
   { id: 'timer', label: 'Timer', icon: '⏱️', route: '/app/timer', page: 1, position: 2 },
-  { id: 'settings', label: 'Settings', icon: '⚙️', route: '/app/settings', page: 1, position: 6 },
-  { id: 'resume', label: 'Resume', icon: '📄', route: '/app/resume', page: 1, position: 7 },
-
-  { id: 'company:salesforce', label: 'Salesforce', icon: '🏢', route: '/app/company/salesforce', page: 2, position: 0 },
-  { id: 'company:strava', label: 'Strava', icon: '🏃', route: '/app/company/strava', page: 2, position: 1 },
-  { id: 'company:lowes', label: "Lowe's", icon: '🏠', route: '/app/company/lowes', page: 2, position: 4 },
-  { id: 'company:consulting', label: 'Consulting', icon: '💼', route: '/app/company/consulting', page: 2, position: 5 },
+  { id: 'settings', label: 'Settings', icon: '⚙️', route: '/app/settings', page: 1, position: 3 },
+  { id: 'resume', label: 'Resume', icon: '📄', route: '/app/resume', page: 1, position: 6 },
+  { id: 'company:salesforce', label: 'Salesforce', icon: '🏢', route: '/app/company/salesforce', page: 1, position: 7 },
+  { id: 'company:strava', label: 'Strava', icon: '🏃', route: '/app/company/strava', page: 1, position: 8 },
+  { id: 'company:lowes', label: "Lowe's", icon: '🏠', route: '/app/company/lowes', page: 1, position: 9 },
+  { id: 'company:consulting', label: 'Consulting', icon: '💼', route: '/app/company/consulting', page: 1, position: 10 },
 ]
