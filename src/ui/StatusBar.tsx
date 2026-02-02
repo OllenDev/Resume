@@ -11,15 +11,25 @@ export default function StatusBar() {
 
   const h = now.getHours()
   const m = now.getMinutes()
-  const hh = pad2(h)
+  const displayHour = h % 12 || 12
+  const hh = pad2(displayHour)
   const mm = pad2(m)
+  const ampm = h >= 12 ? 'PM' : 'AM'
 
   return (
     <div className="statusbar">
-      <div className="status-left">{hh}:{mm}</div>
+      <div className="status-left">{hh}:{mm} {ampm}</div>
       <div className="status-right">
-        <span className="sb">📶</span>
-        <span className="sb">🔋</span>
+        <span className="status-pill">3G</span>
+        <span className="signal" aria-hidden>
+          <span className="b1" />
+          <span className="b2" />
+          <span className="b3" />
+          <span className="b4" />
+        </span>
+        <span className="battery" aria-hidden>
+          <span className="battery-level" />
+        </span>
       </div>
     </div>
   )

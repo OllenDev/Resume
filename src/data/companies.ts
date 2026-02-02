@@ -1,4 +1,4 @@
-export type CompanyId = 'salesforce' | 'strava' | 'lowes' | 'consulting'
+export type CompanyId = 'salesforce' | 'strava' | 'lowes' | 'skookum' | 'cardinal'
 
 export type Company = {
   id: CompanyId
@@ -38,12 +38,20 @@ export const companies: Record<CompanyId, Company> = {
     bullets: ['Tech lead for early flagship Android app', 'Shipped core retail experiences'],
     tech: ['Android', 'Java/Kotlin'],
   },
-  consulting: {
-    id: 'consulting',
-    name: 'Consulting',
+  skookum: {
+    id: 'skookum',
+    name: 'Skookum',
     title: 'Principal / Mobile Lead',
     dates: '—',
     bullets: ['Led mobile teams across client projects', 'Architecture + delivery'],
     tech: ['iOS', 'Android', 'Leadership'],
+  },
+  cardinal: {
+    id: 'cardinal',
+    name: 'Cardinal Solutions',
+    title: 'Mobile Lead Consultant',
+    dates: '—',
+    bullets: ['Delivered Android/iOS apps across enterprise clients', 'Mentored engineers + shipped MVPs'],
+    tech: ['Android', 'iOS', 'Consulting'],
   },
 }

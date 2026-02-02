@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { defaultIcons, AppIcon } from '../data/apps'
 import { loadJson, saveJson } from '../lib/storage'
@@ -15,12 +15,17 @@ type DragState = {
   hoverIcons: AppIcon[] | null
 }
 
+type IconStyleVars = CSSProperties & {
+  '--icon-bg'?: string
+}
+
 export default function Home() {
   const nav = useNavigate()
   const [state, setState] = useState<LayoutState>(() => loadJson(LAYOUT_KEY, defaultLayout))
   useEffect(() => saveJson(LAYOUT_KEY, state), [state])
   const [now, setNow] = useState(() => new Date())
   const [isEditing, setIsEditing] = useState(false)
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const dragStateRef = useRef<DragState | null>(null)
   const [draggingId, setDraggingId] = useState<AppIcon['id'] | null>(null)
   const [jiggleId, setJiggleId] = useState<AppIcon['id'] | null>(null)
@@ -40,9 +45,18 @@ export default function Home() {
     return () => clearInterval(t)
   }, [])
 
+  useEffect(() => {
+    if (isEditing) setIsDrawerOpen(false)
+  }, [isEditing])
+
   const pageIcons = useMemo(
     () => state.icons.filter(i => i.page === state.page),
     [state.icons, state.page]
+  )
+
+  const drawerIcons = useMemo(
+    () => state.icons.filter(icon => icon.id !== 'clock-widget'),
+    [state.icons]
   )
 
   const touchStartX = useRef<number | null>(null)
@@ -55,6 +69,7 @@ export default function Home() {
     }
     trackEvent('icon_click', { icon_id: icon.id, icon_label: icon.label, page: state.page })
     trackEvent('app_open', { app_id: icon.id, app_name: icon.label, source: 'home', home_page: state.page })
+    setIsDrawerOpen(false)
     nav(icon.route)
   }
 
@@ -66,7 +81,7 @@ export default function Home() {
     touchStartX.current = e.touches[0]?.clientX ?? null
   }
   function onTouchEnd(e: React.TouchEvent) {
-    if (isEditing) return
+    if (isEditing || !state) return
     const start = touchStartX.current
     const end = e.changedTouches[0]?.clientX ?? null
     touchStartX.current = null
@@ -221,6 +236,13 @@ export default function Home() {
           const row = Math.floor(icon.position / GRID_COLUMNS)
           const col = icon.position % GRID_COLUMNS
           const isClockWidget = icon.id === 'clock-widget'
+          const iconStyle: IconStyleVars = {
+            gridColumn: `${col + 1} / span ${size.cols}`,
+            gridRow: `${row + 1} / span ${size.rows}`,
+          }
+          if (icon.iconBg) {
+            iconStyle['--icon-bg'] = icon.iconBg
+          }
           return (
             <button
               key={icon.id}
@@ -231,10 +253,7 @@ export default function Home() {
               onPointerMove={onIconPointerMove}
               onPointerUp={onIconPointerUp}
               onPointerCancel={onIconPointerUp}
-              style={{
-                gridColumn: `${col + 1} / span ${size.cols}`,
-                gridRow: `${row + 1} / span ${size.rows}`,
-              }}
+              style={iconStyle}
             >
               <div className="icon-inner">
                 {isClockWidget ? (
@@ -242,11 +261,18 @@ export default function Home() {
                     <div className="tick" />
                     <div className="hand hour" style={{ transform: `translateY(-50%) rotate(${hourDeg}deg)` }} />
                     <div className="hand min" style={{ transform: `translateY(-50%) rotate(${minuteDeg}deg)` }} />
+                    <div className="hand sec" style={{ transform: `translateY(-50%) rotate(${now.getSeconds() * 6}deg)` }} />
                     <div className="center" />
                   </div>
                 ) : (
                   <>
-                    <div className="glyph">{icon.icon}</div>
+                    {icon.iconImage ? (
+                      <div className="glyph image">
+                        <img src={icon.iconImage} alt={icon.label} />
+                      </div>
+                    ) : (
+                      <div className="glyph">{icon.icon}</div>
+                    )}
                     <div className="label">{icon.label}</div>
                   </>
                 )}
@@ -254,6 +280,28 @@ export default function Home() {
             </button>
           )
         })}
+      </div>
+
+      <div className={`drawer ${isDrawerOpen ? 'open' : ''}`}>
+        <button className="drawer-handle" onClick={() => setIsDrawerOpen(o => !o)} aria-expanded={isDrawerOpen}>
+          <span className="drawer-grip" />
+        </button>
+        <div className="drawer-content">
+          {drawerIcons.map(icon => {
+            const drawerStyle: IconStyleVars = {}
+            if (icon.iconBg) {
+              drawerStyle['--icon-bg'] = icon.iconBg
+            }
+            return (
+              <button key={icon.id} className="drawer-icon" onClick={() => open(icon)}>
+                <span className="drawer-glyph" style={drawerStyle}>
+                  {icon.iconImage ? <img src={icon.iconImage} alt={icon.label} /> : <span className="drawer-emoji">{icon.icon}</span>}
+                </span>
+                <span className="drawer-label">{icon.label}</span>
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       <div className="dots">
